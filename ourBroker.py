@@ -1,5 +1,13 @@
 from Tariff import Tariff
 import random
+import csv
+import pandas as pd
+import datetime as dt
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import style
+
+
 
 
 class BrokerOurs:
@@ -36,26 +44,96 @@ class BrokerOurs:
         self.customer_usage = usage_data
         self.other_data = other_data
 
+
+
+    def simulation_price(self):
+        # style.use('ggplot')
+        prices= self.other_data["Cleared Price"]
+        series = pd.Series(np.array(prices))
+        # how much the prices given time. in this case each hour
+        returns= series.pct_change()
+        # print(returns)
+
+        #last price of the cleared prices
+        last_price= self.other_data["Cleared Price"][-1]
+        min_cleared_price= min(prices)
+        # print(" min", min_cleared_price)
+
+        # number of simulations
+        num_simulations = 1000
+        num_hours = 335
+        simulation_df = pd.DataFrame()
+        for x in range(num_simulations):
+            count = 0
+            hourly_vol = returns.std()
+            # print(hourly_vol)
+
+            predicted_prices = []
+            price = last_price * (1 + np.random.normal(0, hourly_vol))
+            # print(price)
+            predicted_prices.append(price)
+            for y in range(num_hours):
+                if count == 334:
+                    break
+                #normal distributions here
+                price = predicted_prices[count] * (1 + np.random.normal(0, hourly_vol))
+                predicted_prices.append(price)
+                count += 1
+            simulation_df[x] = predicted_prices
+            # print(predicted_prices)
+            result_price=[]
+
+            for i in range(len(predicted_prices)):
+                if predicted_prices[i] > min_cleared_price:
+                    result_price.append(predicted_prices[i])
+            # resultFyle = open("predictedPrices.csv",'w')
+            # resultFyle.write("Predicted-Prices " + str(result_price) + "\n")
+            # resultFyle.close()
+
+
+        # print(predicted_prices)
+    def quantity_calculations(self):
+        df = pd.DataFrame(pd.read_csv("CustomerNums.csv",index_col=0,header=0))
+        # print(df)
+        av=[]
+        for i in range(336):
+            av.append(df[str(i)].mean()*100 - self.power)
+        print(str(av) + "\n")
+
+        # customer_usages= self.customer_usage["Customer Usage"]
+        # customer_usages=self.customer_usage
+        # for j in range(len(self.customer_usage)):
+        #     print()
+
+
     # Returns a list of asks of the form ( price, quantity ).
     def post_asks(self, time):
         # prices = self.other_data["Cleared Quantity"]
         # for i in range(len(prices)):
         #     if i % 24 ==0:
         #         print(prices[i])
-        # return [(i, 100) for i in range(1, 101)]
-        average_price = sum(self.other_data['Cleared Price'])/len(self.other_data['Cleared Price'])
-        average_quantity = sum(self.other_data['Total Demand'])/len(self.other_data['Total Demand'])
-        print("average price", average_price)
-        print("average quantity", average_quantity)
 
-        for i in range(len(self.other_data['Cleared Price'])):
+        # average_price = sum(self.other_data['Cleared Price'])/len(self.other_data['Cleared Price'])
+        # average_quantity = sum(self.other_data['Total Demand'])/len(self.other_data['Total Demand'])
+        # print("average price", average_price)
+        # print("average quantity", average_quantity)
 
-            current_price = self.other_data['Cleared Price'][i]
-            current_demand = self.other_data['Total Demand'][i]
-            print(current_price, "current price", i)
-            print(current_demand, "current demand", i)
-            demand_difference = (current_demand/average_quantity)*100-100
-            print(demand_difference, "demand difference", i)
+        # for i in range(len(self.other_data['Cleared Price'])):
+        #
+        #     current_price = self.other_data['Cleared Price'][-i]
+        #
+        #     # current_demand = self.other_data['Total Demand'][i]
+        #     print(current_price, "current price")
+            # print(current_demand, "current demand", i)
+            # demand_difference = (current_demand/average_quantity)*100-100
+            # print(demand_difference, "demand difference", i)
+        self.simulation_price()
+        self.quantity_calculations()
+
+
+
+
+        return [(i, 10) for i in range(1, 11)]
 
         # need to calculate the current price and quantity
         # see how much much it is less or higher than the average price and quantity
@@ -72,7 +150,7 @@ class BrokerOurs:
     ## Receives data for the last time period from the server.
     def receive_message( self, msg ):
         pass
-        
+
     ## Returns a negative number if the broker doesn't have enough energy to
     ## meet demand.  Returns a positive number otherwise.
     def get_energy_imbalance( self, data ):
