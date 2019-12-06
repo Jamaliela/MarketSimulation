@@ -89,6 +89,7 @@ class BrokerOurs:
             # resultFyle = open("predictedPrices.csv",'w')
             # resultFyle.write("Predicted-Prices " + str(result_price) + "\n")
             # resultFyle.close()
+        return result_price
 
 
         # print(predicted_prices)
