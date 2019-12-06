@@ -20,6 +20,7 @@ class BrokerOurs:
         self.power = 0
         self.customer_usage = None
         self.other_data = None
+        self.tariff_monitor = []
 
         # Lists to contain:
         # asks: tuples of the form ( quantity, price )
@@ -29,6 +30,7 @@ class BrokerOurs:
         self.asks = []
         self.tariffs = []
         self.customers = []
+
 
     # A function to accept the bootstrap data set.  The data set contains:
     # usage_data, a dict in which keys are integer customer ID numbers,
@@ -141,19 +143,26 @@ class BrokerOurs:
         # then we gotta randomize it based on that, I have no idea
         # what to do if the demand is lower or higher than the average demand
 
-
-
-
-    ## Returns a list of Tariff objects.
+    # Returns a list of Tariff objects.
     def post_tariffs(self, time):
+        # you can create 5,6 tariffs with different prices but the same time simulation
+        # use the information gotten for the next round to see which price works the best.
         return [Tariff(self.idx, price=100, duration=3, exitfee=0)]
 
-    ## Receives data for the last time period from the server.
-    def receive_message( self, msg ):
-        pass
+    # Receives data for the last time period from the server.
+    def receive_message(self, msg):
+        tariffs = msg("Tariffs")
+        for t in tariffs:
+            print(t.price)
 
-    ## Returns a negative number if the broker doesn't have enough energy to
-    ## meet demand.  Returns a positive number otherwise.
+        # storing all your tariffs in a list
+        self.tariff_monitor = msg["Tariff"]
+
+        # if we want the cleared price from the last time period to get the newest market price
+        self.other_data["Cleared Price"].append(msg["Cleared Price"])
+
+    # Returns a negative number if the broker doesn't have enough energy to
+    # meet demand.  Returns a positive number otherwise.
     def get_energy_imbalance( self, data ):
         return self.power
 

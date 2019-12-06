@@ -65,9 +65,11 @@ class Server():
             ## Pay brokers based on their subscriptions
             ## Assess each broker's surplus or deficit
             ## Pay/charge brokers accordingly
+            imbalances = {}
             for b in self.brokers:
-                b.gain_revenue( self.customers, usage )
-                b.adjust_cash( b.get_energy_imbalance( usage ) * price )
+                b.gain_revenue(self.customers, usage)
+                b.adjust_cash(b.get_energy_imbalance(usage) * price )
+                imbalances[b.idx] = b.power
                 b.power = 0
 
             ## Let customers decide between tariffs and subscribe
@@ -91,12 +93,13 @@ class Server():
                        'Tariffs': self.tariffs}
             
             for b in self.brokers:
-                b.receive_message( newdata )
+                newdata["Imbalance"] = imbalances[b.idx]
+                b.receive_message(newdata)
 
             for t in self.tariffs:
-                if t.publisher != 0: t.dec_time()
+                if t.publisher != 0:t.dec_time()
 
-            self.tariffs = [ t for t in self.tariffs if t.duration > 0 ]
+            self.tariffs = [t for t in self.tariffs if t.duration > 0]
 
             ## Let brokers post new tariffs
             for b in self.brokers:
