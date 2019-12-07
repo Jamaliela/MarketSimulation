@@ -147,46 +147,19 @@ class BrokerOurs:
         # print(str(av) + "\n")
         self.av=[round(i) for i in av]
 
-
-        # customer_usages= self.customer_usage["Customer Usage"]
-        # customer_usages=self.customer_usage
-        # for j in range(len(self.customer_usage)):
-        #     print()
-
-
     # Returns a list of asks of the form ( price, quantity ).
     def post_asks(self, time):
         self.simulation_price()
         self.quantity_calculations()
         demand_post= self.av[time%23]
-        # print(demand_post)
-        # print(self.price)
         price_post= self.price[time%23]
-        # print(price)
 
-        # print(self.price)
-        # print(price)
-        # prices = self.other_data["Cleared Quantity"]
-        # for i in range(len(prices)):
-        #     if i % 24 ==0:
-        #         print(prices[i])
-
-        # average_price = sum(self.other_data['Cleared Price'])/len(self.other_data['Cleared Price'])
-        # average_quantity = sum(self.other_data['Total Demand'])/len(self.other_data['Total Demand'])
-        # print("average price", average_price)
-        # print("average quantity", average_quantity)
-
-        # for i in range(len(self.other_data['Cleared Price'])):
-        #
-        #     current_price = self.other_data['Cleared Price'][-i]
         #
         #     # current_demand = self.other_data['Total Demand'][i]
         #     print(current_price, "current price")
             # print(current_demand, "current demand", i)
             # demand_difference = (current_demand/average_quantity)*100-100
             # print(demand_difference, "demand difference", i)
-
-
 
         asks= ([(price_post, demand_post) for i in range(0, 1)])
         print(asks)
@@ -208,31 +181,21 @@ class BrokerOurs:
         # start_price=100
         # print(self.tariff_monitor)
         ret=[]
-        number_tarrifs=6
-        # print(type(self.cus))
-        # predicted=  round(int(self.price), 0)
 
-        # average= [x*0.1 for x in self.av]
-
+        # print(current_custo)
+        #
+        #
+        # # for i in range( number_tarrifs):
         predicted= list(map(int, self.price))
         for i in predicted:
             predicted= round(i*1.4, 0)
         average= list(map(int, self.av))
-        # print(average)
         calculated_exit_fee=predicted *average[time % 23] * 0.1 / len(self.customer_usage)
-        # print(averaged)
-        # for x in average:
-        #     print(x)
-            # average= predicted * average[time % 24]
-            # print(average)
-        # print(predicted)
-        #
-        for i in range( number_tarrifs):
-            self.exitfee =calculated_exit_fee
-            self.tariff_price = predicted
+        self.exitfee =calculated_exit_fee
+        self.tariff_price = predicted
 
         # # return [Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee)]
-            ret.append(Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee))
+        ret.append(Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee))
         # print([str(i) for i in ret])
         return ret
 
@@ -261,16 +224,21 @@ class BrokerOurs:
 
     # Receives data for the last time period from the server.
     def receive_message(self, msg):
+        cx_updated = len(self.customers) - len(self.customers)
+        # print(cx_updated)
+        current_name_of_custo = len(self.customers) - cx_updated
 
 
         tariffs = msg["Tariffs"]
         for t in tariffs:
-            print ("price: {} Duration: {} exitfee: {}  number of customers: {}"
-            .format(round(t.price), round(t.duration), round(t.exitfee), len(self.customers)))
+            print ("price: {} Duration: {} exitfee: {} number_of_customers: {} "
+            .format(round(t.price), round(t.duration), round(t.exitfee), current_name_of_custo))
 
 
         # storing all your tariffs in a list
         self.tariff_monitor = msg["Tariffs"]
+        # for i in self.tariff_monitor:
+        #     print(i)
 
         # if we want the cleared price from the last time period to get the newest market price
         self.other_data["Cleared Price"].append(msg["Cleared Price"])
