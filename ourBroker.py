@@ -9,9 +9,6 @@ from matplotlib import style
 import math
 
 
-
-
-
 class BrokerOurs:
 
     def __init__(self, idx):
@@ -53,6 +50,10 @@ class BrokerOurs:
 
 
     def simulation_price(self):
+        """
+        by using normal distribution and the Cleared Price column in the file otherdata.csv we calculate
+        the our prices"
+        """
         # style.use('ggplot')
         prices= self.other_data["Cleared Price"]
         mean= np.mean(prices, dtype=np.float64)
@@ -64,184 +65,105 @@ class BrokerOurs:
         # print(returns)
 
         #last price of the cleared prices
-        last_price= self.other_data["Cleared Price"][-1]
-        min_cleared_price= min(prices)
-        # print(" min", min_cleared_price)
+        last_price= self.other_data["Cleared Price"][-1] # opening file
+        min_cleared_price= min(prices)  # calculating the min of the prices
 
-        # number of simulations
-        num_simulations = 1000
-        num_hours = 335
+        num_simulations = 1000 # setting amount of simulations
+        num_hours = 335 # number of hours of data (two weeks of data)
         simulation_df = pd.DataFrame()
-        for x in range(num_simulations):
+        for x in range(num_simulations): # running the simulations
             count = 0
-            hourly_vol = returns.std()
-            # print(hourly_vol)
+            hourly_vol = returns.std() # the hourly volume will be the standard deviation
 
             predicted_prices = []
-            price = last_price * (1 + np.random.normal(0, hourly_vol))
+            price = last_price * (1 + np.random.normal(0, hourly_vol)) # setting each price to random numbers according to the normal distribution
 
-            # print(price)
+            predicted_prices.append(round(price, 0)) # putting all the prices in one string and rounding them
 
-            predicted_prices.append(round(price, 0))
-            # rounded = list(map(int, predicted_prices))
-            # print(rounded)
             for y in range(num_hours):
                 if count == 334:
                     break
                 #normal distributions here
-                price = predicted_prices[count] * (1 + np.random.normal(0, hourly_vol))
-                predicted_prices.append(price)
+                price = predicted_prices[count] * (1 + np.random.normal(0, hourly_vol)) # making the predicted prices have a normal distribution
+                predicted_prices.append(price) #a
                 count += 1
             simulation_df[x] = predicted_prices
             # result_prices=[]
             for i in range(len(predicted_prices)):
-
-                # print(average)
-                if predicted_prices[i] < min_cleared_price:
+                if predicted_prices[i] < min_cleared_price: # condition that ensures that all the prices are positive (bigger than the min_cleared price
                     continue
                 else:
                     self.price.append(predicted_prices[i])
         self.price=[round(i) for i in self.price]
 
-
-
-                    # print(predicted_prices[i])
-                    # print(predicted_prices)
-        # resultFyle = open("predictedPrices.csv",'w')
-        # resultFyle.write("Predicted-Prices " + str(self.price) + "\n")
-        # resultFyle.close()
-
-
-
-
-
-
-
-
-
-            # print([i for i in predicted_prices if i > 29])
-            # print(predicted_prices)
-            # result_price=[]
-
-            # for i in range(len(predicted_prices)):
-            #     if  not predicted_prices[i]:
-            #         break
-            #
-            #     else:
-            #         if predicted_prices[i] > min_cleared_price:
-                        # print(predicted_prices)
-                        # resultFyle = open("predictedPrices.csv",'w')
-                        # resultFyle.write("Predicted-Prices " + str(predicted_prices) + "\n")
-                        # resultFyle.close()
-        # self.price= result_price
-        # print(self.price)
-
-
-        # print(predicted_prices)
     def quantity_calculations(self):
-        df = pd.DataFrame(pd.read_csv("CustomerNums.csv",index_col=0,header=0))
+        """
+        This function calculates the quantity for the demand"
+        """
+        df = pd.DataFrame(pd.read_csv("CustomerNums.csv",index_col=0,header=0)) # accessing the document
         # print(df)
         av=[]
         for i in range(336):
-            av.append(df[str(i)].mean()*100 - self.power)
+            av.append(df[str(i)].mean()*100 - self.power) # applying the formula to calculate average.
         # print(str(av) + "\n")
-        self.av=[round(i) for i in av]
+        self.av=[round(i) for i in av] # rounding our result
 
     # Returns a list of asks of the form ( price, quantity ).
     def post_asks(self, time):
+        """
+        this function uses the two functions above to post the asks
+        :return: returns a list of asks of the form ( price, quantity ).
+        """
+        # calling our two functions first
         self.simulation_price()
         self.quantity_calculations()
+        # calculating the demand and price % 23 to see which interval they fall in
         demand_post= self.av[time%23]
         price_post= self.price[time%23]
 
-        #
-        #     # current_demand = self.other_data['Total Demand'][i]
-        #     print(current_price, "current price")
-            # print(current_demand, "current demand", i)
-            # demand_difference = (current_demand/average_quantity)*100-100
-            # print(demand_difference, "demand difference", i)
-
+        # posting them in a tuple
         asks= ([(price_post, demand_post) for i in range(0, 1)])
         print(asks)
 
         return asks
 
-
-        # need to calculate the current price and quantity
-        # see how much much it is less or higher than the average price and quantity
-        # then we gotta randomize it based on that, I have no idea
-        # what to do if the demand is lower or higher than the average demand
-
-
     # Returns a list of Tariff objects
     def post_tariffs(self, time):
-        # print(type(len(self.customer_usage)))
-        # predicted= [np.round(i)* 1.4 for i in self.price]
-        # print(predicted)
-        # start_price=100
-        # print(self.tariff_monitor)
+        """
+        This function will post the tarrifs according to the duration, exitfee and prices.
+        :return: Returns a list of Tariff objects
+        """
+        # initializing variables
         ret=[]
-
-        # print(current_custo)
-        #
-        #
-        # # for i in range( number_tarrifs):
         predicted= list(map(int, self.price))
-        for i in predicted:
+
+        for i in predicted:  # looping the tarrifs to calculate the average, exit fee and predicted prices
             predicted= round(i*1.4, 0)
         average= list(map(int, self.av))
         calculated_exit_fee=predicted *average[time % 23] * 0.1 / len(self.customer_usage)
         self.exitfee =calculated_exit_fee
         self.tariff_price = predicted
 
-        # # return [Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee)]
+        # returning each iteration of the tarrifs
         ret.append(Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee))
-        # print([str(i) for i in ret])
+
         return ret
 
-
-        #  time_of_day=step%24
-        # if time_of_day<=4 or time_of_day>=20:
-        #     tar_price=self.genetic_table["TarifPrice"]["Section I"]+self.genetic_table["AskPrice"]["Section I"]
-        #     duration=self.genetic_table["Duration"]["Section I"]
-        #     exit_fee=self.genetic_table["ExitFee"]["Section I"]
-        # elif time_of_day>8 and time_of_day<16:
-        #     tar_price = self.genetic_table["TarifPrice"]["Section III"]+self.genetic_table["AskPrice"]["Section III"]
-        #     duration = self.genetic_table["Duration"]["Section III"]
-        #     exit_fee = self.genetic_table["ExitFee"]["Section III"]
-        # else:
-        #     tar_price = self.genetic_table["TarifPrice"]["Section II"]+self.genetic_table["AskPrice"]["Section II"]
-        #     duration = self.genetic_table["Duration"]["Section II"]
-        #     exit_fee = self.genetic_table["ExitFee"]["Section II"]
-        # duration=min(duration,7)
-        # exit_fee = min(2000, exit_fee)
-        # return ret
-        # you can create 5,6 tariffs with different prices but the same time simulation
-        # use the information gotten for the next round to see which price works the best.
-        # result= [Tariff(self.idx, price=100, duration=3, exitfee=0)]
-        # print(result)
-        # return result
-
-    # Receives data for the last time period from the server.
     def receive_message(self, msg):
+        """
+        Receives data for the last time period from the server.
+        """
+        # calculating the new amount of customers so that it can get printed
         cx_updated = len(self.customers) - len(self.customers)
-        # print(cx_updated)
         current_name_of_custo = len(self.customers) - cx_updated
 
-
         tariffs = msg["Tariffs"]
+
+        # setting up format so that each iteration is printed
         for t in tariffs:
             print ("price: {} Duration: {} exitfee: {} number_of_customers: {} "
             .format(round(t.price), round(t.duration), round(t.exitfee), current_name_of_custo))
 
-
-        # storing all your tariffs in a list
-        self.tariff_monitor = msg["Tariffs"]
-        # for i in self.tariff_monitor:
-        #     print(i)
-
-        # if we want the cleared price from the last time period to get the newest market price
-        self.other_data["Cleared Price"].append(msg["Cleared Price"])
 
     # Returns a negative number if the broker doesn't have enough energy to
     # meet demand.  Returns a positive number otherwise.
