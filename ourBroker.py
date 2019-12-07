@@ -6,6 +6,8 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import style
+import math
+
 
 
 
@@ -80,8 +82,9 @@ class BrokerOurs:
 
             # print(price)
 
-            predicted_prices.append(price)
-
+            predicted_prices.append(round(price, 0))
+            # rounded = list(map(int, predicted_prices))
+            # print(rounded)
             for y in range(num_hours):
                 if count == 334:
                     break
@@ -98,6 +101,9 @@ class BrokerOurs:
                     continue
                 else:
                     self.price.append(predicted_prices[i])
+        self.price=[round(i) for i in self.price]
+
+
 
                     # print(predicted_prices[i])
                     # print(predicted_prices)
@@ -139,7 +145,7 @@ class BrokerOurs:
         for i in range(336):
             av.append(df[str(i)].mean()*100 - self.power)
         # print(str(av) + "\n")
-        self.av= av
+        self.av=[round(i) for i in av]
 
 
         # customer_usages= self.customer_usage["Customer Usage"]
@@ -152,8 +158,9 @@ class BrokerOurs:
     def post_asks(self, time):
         self.simulation_price()
         self.quantity_calculations()
-        demand_post= (self.av[time%23])
-        # print(demand)
+        demand_post= self.av[time%23]
+        # print(demand_post)
+        # print(self.price)
         price_post= self.price[time%23]
         # print(price)
 
@@ -181,10 +188,10 @@ class BrokerOurs:
 
 
 
-        result= ([(price_post, demand_post) for i in range(0, 1)])
-        # print(result)
+        asks= ([(price_post, demand_post) for i in range(0, 1)])
+        print(asks)
 
-        return result
+        return asks
 
 
         # need to calculate the current price and quantity
@@ -194,17 +201,39 @@ class BrokerOurs:
 
 
     # Returns a list of Tariff objects
-    def post_tariffs(self, steps):
-        start_price=100
+    def post_tariffs(self, time):
+        # print(type(len(self.customer_usage)))
+        # predicted= [np.round(i)* 1.4 for i in self.price]
+        # print(predicted)
+        # start_price=100
         # print(self.tariff_monitor)
         ret=[]
-        number_tarrifs=23
+        number_tarrifs=6
+        # print(type(self.cus))
+        # predicted=  round(int(self.price), 0)
+
+        # average= [x*0.1 for x in self.av]
+
+        predicted= list(map(int, self.price))
+        for i in predicted:
+            predicted= round(i*1.4, 0)
+        average= list(map(int, self.av))
+        # print(average)
+        calculated_exit_fee=predicted *average[time % 23] * 0.1 / len(self.customer_usage)
+        # print(averaged)
+        # for x in average:
+        #     print(x)
+            # average= predicted * average[time % 24]
+            # print(average)
+        # print(predicted)
+        #
         for i in range( number_tarrifs):
-            p= random.randint(20, 100)
-            d= random.randint(0, steps)
-            x= random.randint(0, 500)
-            ret.append(Tariff(random.randint(0, self.idx), price=p, duration=d, exitfee= x ))
-        print([str(i) for i in ret])
+            self.exitfee =calculated_exit_fee
+            self.tariff_price = predicted
+
+        # # return [Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee)]
+            ret.append(Tariff( self.idx, price=self.tariff_price, duration=3, exitfee=self.exitfee))
+        # print([str(i) for i in ret])
         return ret
 
 
@@ -232,13 +261,16 @@ class BrokerOurs:
 
     # Receives data for the last time period from the server.
     def receive_message(self, msg):
-        pass
-        # tariffs = msg("Tariffs")
-        # for t in tariffs:
-        #     print(t.price)
+
+
+        tariffs = msg["Tariffs"]
+        for t in tariffs:
+            print ("price: {} Duration: {} exitfee: {}  number of customers: {}"
+            .format(round(t.price), round(t.duration), round(t.exitfee), len(self.customers)))
+
 
         # storing all your tariffs in a list
-        # self.tariff_monitor = msg["Tariff"]
+        self.tariff_monitor = msg["Tariffs"]
 
         # if we want the cleared price from the last time period to get the newest market price
         self.other_data["Cleared Price"].append(msg["Cleared Price"])
